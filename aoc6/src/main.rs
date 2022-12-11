@@ -1,7 +1,7 @@
 use std::io;
 use std::io::Read;
 
-const MARKER_SIZE : usize = 4;
+const MARKER_SIZE : usize = 14;
 
 fn is_marker(buf: &[u8]) -> bool {
     for i in 0..buf.len() {
