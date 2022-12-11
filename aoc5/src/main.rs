@@ -81,10 +81,9 @@ fn main() {
         let to : usize = to_str.parse().expect("failed to parse to");
         //dbg!(to);
 
-        for _ in 0..count {
-            let c = stacks[from-1].pop().expect("stack empty");
-            stacks[to-1].push(c);
-        }
+        let len = stacks[from-1].len();
+        let rem : String = stacks[from-1].drain(len-count..).collect();
+        stacks[to-1].push_str(&rem);
     }
     for stack in stacks {
         print!("{}", stack.chars().rev().next().expect("stack empty"));
