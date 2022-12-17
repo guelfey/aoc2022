@@ -65,6 +65,59 @@ fn visible_trees(field: &Vec<Vec<u8>>) -> usize {
     )
 }
 
+fn tree_score(field: &Vec<Vec<u8>>, tx: usize, ty: usize) -> usize {
+    let h = field[ty][tx];
+    let end = field.len()-1;
+
+    let mut xscore = 0;
+    for x in tx+1..=end {
+        xscore += 1;
+        if field[ty][x] >= h {
+            break;
+        }
+    }
+
+    let mut x2score = 0;
+    for x in (0..tx).rev() {
+        x2score += 1;
+        if field[ty][x] >= h {
+            break;
+        }
+    }
+
+    let mut yscore = 0;
+    for y in ty+1..=end {
+        yscore += 1;
+        if field[y][tx] >= h {
+            break;
+        }
+    }
+
+    let mut y2score = 0;
+    for y in (0..ty).rev() {
+        y2score += 1;
+        if field[y][tx] >= h {
+            break;
+        }
+    }
+    
+    xscore * x2score * yscore * y2score
+}
+
+fn max_score(field: &Vec<Vec<u8>>) -> usize {
+    let mut max = 0;
+    for x in 0..field.len() {
+        for y in 0..field.len() {
+            let score = tree_score(field, x, y);
+            if score > max {
+                max = score;
+            }
+            //dbg!(x, y, score);
+        }
+    }
+    max
+}
+
 fn main() {
     let mut field = Vec::new();
     
@@ -83,6 +136,6 @@ fn main() {
         field.push(row);
     }
 
-    let count = visible_trees(&field);
-    println!("{count}");
+    let score = max_score(&field);
+    println!("{score}");
 }
