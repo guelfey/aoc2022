@@ -115,12 +115,16 @@ fn update_tail(hx: usize, hy: usize, tx: usize, ty: usize) -> (usize, usize) {
     (tx, ty)
 }
 
+const TAIL_LENGTH : usize = 9;
+
 fn visited_fields(xsize: usize, ysize: usize, xstart: usize, ystart: usize, moves: &[Move]) -> usize {
     let mut visited = Vec::new();
     for _ in 0..xsize {
         visited.push(vec![false; ysize]);
     }
-    let (mut tx, mut ty, mut hx, mut hy) = (xstart, ystart, xstart, ystart);
+    let (mut hx, mut hy) = (xstart, ystart);
+    let mut tx = [xstart; TAIL_LENGTH];
+    let mut ty = [ystart; TAIL_LENGTH];
     for mo in moves {
         let mut m = *mo;
         dbg!(m);
@@ -133,9 +137,12 @@ fn visited_fields(xsize: usize, ysize: usize, xstart: usize, ystart: usize, move
             }
             m.size -= 1;
             
-            (tx, ty) = update_tail(hx, hy, tx, ty);
+            (tx[0], ty[0]) = update_tail(hx, hy, tx[0], ty[0]);
+            for i in 1..TAIL_LENGTH {
+                (tx[i], ty[i]) = update_tail(tx[i-1], ty[i-1], tx[i], ty[i]);
+            }
             //print_field(hx, hy, tx, ty, xsize, ysize);
-            visited[tx][ty] = true;
+            visited[tx[TAIL_LENGTH-1]][ty[TAIL_LENGTH-1]] = true;
         }
     }
     let mut total = 0;
