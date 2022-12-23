@@ -74,6 +74,47 @@ fn print_field(hx: usize, hy: usize, tx: usize, ty: usize, xsize: usize, ysize: 
     println!("");
 }
 
+fn update_tail(hx: usize, hy: usize, tx: usize, ty: usize) -> (usize, usize) {
+    let mut tx = tx;
+    let mut ty = ty;
+    if hx > tx + 1 {
+        if hy > ty {
+            // RU
+            ty += 1;
+        } else if ty > hy {
+            // RD
+            ty -= 1;
+        }
+        // R
+        tx += 1;
+    } else if tx > hx + 1{
+        if hy > ty {
+            // LU
+            ty += 1;
+        } else if ty > hy {
+            // LD
+            ty -= 1;
+        }
+        // L
+        tx -= 1;
+    } else if hy > ty + 1 {
+        if hx > tx {
+            tx += 1;
+        } else if tx > hx {
+            tx -= 1;
+        }
+        ty += 1;
+    } else if ty > hy + 1 {
+        if hx > tx {
+            tx += 1;
+        } else if tx > hx {
+            tx -= 1;
+        }
+        ty -= 1;
+    }
+    (tx, ty)
+}
+
 fn visited_fields(xsize: usize, ysize: usize, xstart: usize, ystart: usize, moves: &[Move]) -> usize {
     let mut visited = Vec::new();
     for _ in 0..xsize {
@@ -92,41 +133,7 @@ fn visited_fields(xsize: usize, ysize: usize, xstart: usize, ystart: usize, move
             }
             m.size -= 1;
             
-            if hx > tx + 1 {
-                if hy > ty {
-                    // RU
-                    ty += 1;
-                } else if ty > hy {
-                    // RD
-                    ty -= 1;
-                }
-                // R
-                tx += 1;
-            } else if tx > hx + 1{
-                if hy > ty {
-                    // LU
-                    ty += 1;
-                } else if ty > hy {
-                    // LD
-                    ty -= 1;
-                }
-                // L
-                tx -= 1;
-            } else if hy > ty + 1 {
-                if hx > tx {
-                    tx += 1;
-                } else if tx > hx {
-                    tx -= 1;
-                }
-                ty += 1;
-            } else if ty > hy + 1 {
-                if hx > tx {
-                    tx += 1;
-                } else if tx > hx {
-                    tx -= 1;
-                }
-                ty -= 1;
-            }
+            (tx, ty) = update_tail(hx, hy, tx, ty);
             //print_field(hx, hy, tx, ty, xsize, ysize);
             visited[tx][ty] = true;
         }
