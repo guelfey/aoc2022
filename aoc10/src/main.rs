@@ -20,15 +20,17 @@ impl Op {
     }
 }
 
+const CRT_WIDTH : usize = 40;
+
 struct CPU {
     program: Vec<Op>,
     ip: usize,
     cycles: usize,
     x: isize,
-    signal: isize,
 }
 
 impl CPU {
+
     fn instruction(&mut self) {
         let op = self.program[self.ip];
         let mut cycles = match op {
@@ -37,16 +39,21 @@ impl CPU {
         };
 
         while cycles != 0 {
-            self.cycles += 1;
-            if self.cycles % 40 == 20 {
-                dbg!(self.cycles);
-                dbg!(self.x);
-                let signal = self.x * (self.cycles as isize);
-                dbg!(signal);
-                self.signal += signal;
+            let column = self.cycles % CRT_WIDTH;
+            //dbg!(self.cycles);
+            //dbg!(self.x);
+            if column as isize >= self.x -1 && column as isize <= self.x + 1 {
+                print!("#");
+            } else {
+                print!(".");
             }
+            if column == CRT_WIDTH-1 {
+                println!("");
+            }
+            self.cycles += 1;
             cycles -= 1;
         }
+
         
         if let Op::Addx(i) = op {
             self.x += i;
@@ -77,12 +84,9 @@ fn main() {
         ip: 0,
         cycles: 0,
         x: 1,
-        signal: 0,
     };
 
     while cpu.ip < cpu.program.len() {
         cpu.instruction();
     }
-
-    println!("{}", cpu.signal);
 }
