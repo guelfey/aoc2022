@@ -1,7 +1,8 @@
+use std::collections::VecDeque;
 use std::io;
 use std::str::FromStr;
 
-#[derive (Clone, Copy, Debug)]
+#[derive (Clone, Copy, Debug, PartialEq, Eq)]
 struct Point {
     x: usize,
     y: usize,
@@ -63,7 +64,7 @@ impl FromStr for Lines {
 }
 
 struct Field {
-    filled: Vec<Vec<bool>>,
+    filled: VecDeque<Vec<bool>>,
     start: Point,
     ysize: usize,
 }
@@ -87,10 +88,10 @@ impl Field {
             }
         }
         let xsize = max_x - min_x + 1;
-        let ysize = max_y + 1;
-        let mut filled = Vec::new();
+        let ysize = max_y + 2;
+        let mut filled = VecDeque::new();
         for _ in 0..xsize {
-            filled.push(vec![false; ysize]);
+            filled.push_back(vec![false; ysize]);
         }
         let start = Point{
             x: 500 - min_x,
@@ -128,7 +129,8 @@ impl Field {
         loop {
             // straight down?
             if p.y == self.ysize-1 {
-                return false;
+                // infinite floor, always settle
+                break;
             }
             if !self.filled[p.x][p.y+1] {
                 p.y += 1;
@@ -137,7 +139,10 @@ impl Field {
 
             // down left?
             if p.x == 0 {
-                return false;
+                // extend field on the left
+                self.filled.push_front(vec![false; self.ysize]);
+                self.start.x+=1;
+                p.x += 1;
             }
             if !self.filled[p.x-1][p.y+1] {
                 p.y += 1;
@@ -147,7 +152,7 @@ impl Field {
 
             // down right?
             if p.x == self.filled.len()-1 {
-                return false;
+                self.filled.push_back(vec![false; self.ysize]);
             }
             if !self.filled[p.x+1][p.y+1] {
                 p.y += 1;
@@ -158,7 +163,7 @@ impl Field {
         }
         // settled
         self.filled[p.x][p.y] = true;
-        return true;
+        return p != self.start;
     }
 
     fn print(&self) {
@@ -200,8 +205,11 @@ fn main() {
     let mut count = 0;
     field.print();
     while field.insert() {
-        field.print();
+        //field.print();
         count += 1;
     }
+    // last piece was inserted, but we didn't count it yet
+    count += 1;
+    field.print();
     println!("{count}");
 }
