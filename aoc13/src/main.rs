@@ -69,6 +69,7 @@ impl Lexer {
     }
 }
 
+#[derive(Eq)]
 enum Elem {
     Int(isize),
     List(Vec<Elem>),
@@ -130,7 +131,7 @@ impl Elem {
         }
     }
 
-    fn cmp(left: &Elem, right: &Elem, indent: isize) -> Ordering {
+    fn cmp_print(left: &Elem, right: &Elem, indent: isize) -> Ordering {
         print_indent(indent);
         print!("{left} vs {right}: ");
         match left {
@@ -151,7 +152,7 @@ impl Elem {
                     contents.push(Elem::Int(*l));
                     let tmp_l = Elem::List(contents);
                     println!("");
-                    let res = Elem::cmp(&tmp_l, right, indent+1);
+                    let res = Elem::cmp_print(&tmp_l, right, indent+1);
                     print_indent(indent);
                     println!("{:?}", res);
                     return res;
@@ -163,7 +164,7 @@ impl Elem {
                     contents.push(Elem::Int(*r));
                     let tmp_r = Elem::List(contents);
                     println!("");
-                    let res = Elem::cmp(left, &tmp_r, indent+1);
+                    let res = Elem::cmp_print(left, &tmp_r, indent+1);
                     print_indent(indent);
                     println!("{:?}", res);
                     return res;
@@ -176,7 +177,7 @@ impl Elem {
                             return res;
                         }
                         println!("");
-                        let c = Elem::cmp(&l[i], &r[i], indent+1);
+                        let c = Elem::cmp_print(&l[i], &r[i], indent+1);
                         print_indent(indent);
                         if c == Ordering::Less || c == Ordering::Greater {
                             println!("{:?}", c);
@@ -193,8 +194,24 @@ impl Elem {
             }
         }
     }
+}
 
+impl Ord for Elem {
+    fn cmp(&self, other: &Self) -> Ordering {
+        Elem::cmp_print(self, other, 0)
+    }
+}
 
+impl PartialOrd for Elem {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(Elem::cmp_print(self, other, 0))
+    }
+}
+
+impl PartialEq for Elem {
+    fn eq(&self, other: &Self) -> bool {
+        Elem::cmp_print(self, other, 0) == Ordering::Equal
+    }
 }
 
 fn main() {
@@ -237,7 +254,7 @@ fn main() {
         }.build();
         let l2 = Elem::new(&mut lexer2);
 
-        let res = Elem::cmp(&l1, &l2, 0);
+        let res = Elem::cmp_print(&l1, &l2, 0);
         //println!("{} {:?}", index, res);
         match res {
             Ordering::Equal => panic!(""),
