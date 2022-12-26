@@ -1,5 +1,6 @@
 use core::fmt;
 use std::io;
+use std::cmp::Ordering;
 use ouroboros::self_referencing;
 
 #[derive (PartialEq, Clone, Copy, Debug)]
@@ -91,21 +92,6 @@ impl fmt::Display for Elem {
     }
 }
 
-#[derive(Debug)]
-enum Ord {
-    Determined(bool),
-    Indetermined,
-}
-
-impl fmt::Display for Ord {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            Ord::Determined(b) => write!(f, "{}", b),
-            Ord::Indetermined => write!(f, "indetermined"),
-        }
-    }
-}
-
 fn print_indent(indent: isize) {
     for _ in 0..indent {
         print!("  ");
@@ -144,20 +130,20 @@ impl Elem {
         }
     }
 
-    fn cmp(left: &Elem, right: &Elem, indent: isize) -> Ord {
+    fn cmp(left: &Elem, right: &Elem, indent: isize) -> Ordering {
         print_indent(indent);
         print!("{left} vs {right}: ");
         match left {
             Elem::Int(l) => match right {
                 Elem::Int(r) => {
-                    let mut res = Ord::Indetermined;
+                    let mut res = Ordering::Equal;
                     if l < r {
-                        res =  Ord::Determined(true);
+                        res = Ordering::Less;
                     }
                     if l > r {
-                        res =  Ord::Determined(false);
+                        res = Ordering::Greater;
                     }
-                    println!("{res}");
+                    println!("{:?}", res);
                     return res;
                 }
                 Elem::List(_) => {
@@ -167,7 +153,7 @@ impl Elem {
                     println!("");
                     let res = Elem::cmp(&tmp_l, right, indent+1);
                     print_indent(indent);
-                    println!("{res}");
+                    println!("{:?}", res);
                     return res;
                 }
             },
@@ -179,34 +165,36 @@ impl Elem {
                     println!("");
                     let res = Elem::cmp(left, &tmp_r, indent+1);
                     print_indent(indent);
-                    println!("{res}");
+                    println!("{:?}", res);
                     return res;
                 },
                 Elem::List(r) => {
                     for i in 0..l.len() {
                         if i >= r.len() {
-                            let res = Ord::Determined(false);
-                            println!("{res}");
+                            let res = Ordering::Greater;
+                            println!("{:?}", res);
                             return res;
                         }
                         println!("");
                         let c = Elem::cmp(&l[i], &r[i], indent+1);
                         print_indent(indent);
-                        if let Ord::Determined(_) = c {
-                            println!("{c}");
+                        if c == Ordering::Less || c == Ordering::Greater {
+                            println!("{:?}", c);
                             return c;
                         }
                     }
-                    let mut res = Ord::Determined(true);
+                    let mut res = Ordering::Less;
                     if l.len() == r.len() {
-                        res = Ord::Indetermined;
+                        res = Ordering::Equal;
                     }
-                    println!("{res}");
+                    println!("{:?}", res);
                     return res;
                 }
             }
         }
     }
+
+
 }
 
 fn main() {
@@ -252,11 +240,11 @@ fn main() {
         let res = Elem::cmp(&l1, &l2, 0);
         //println!("{} {:?}", index, res);
         match res {
-            Ord::Indetermined => panic!(""),
-            Ord::Determined(true) => {
+            Ordering::Equal => panic!(""),
+            Ordering::Less => {
                 sum += index;
             },
-            Ord::Determined(false) => {},
+            Ordering::Greater => {},
         }
 
         index += 1;
