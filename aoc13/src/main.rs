@@ -215,8 +215,7 @@ impl PartialEq for Elem {
 }
 
 fn main() {
-    let mut index = 1;
-    let mut sum = 0;
+    let mut lists = Vec::new();
     loop {
         let mut line = String::new();
 
@@ -232,39 +231,47 @@ fn main() {
             continue;
         }
 
-        let mut lexer1 = LexerBuilder{
+        let mut lexer = LexerBuilder{
             s: line,
             peeked: Token::EOF,
             r_builder: |s: &String| s,
         }.build();
-        let l1 = Elem::new(&mut lexer1);
-
-        let mut line2 = String::new();
-        bytes = io::stdin()
-            .read_line(&mut line2)
-            .expect("Failed to read line");
-
-        if bytes == 0 {
-            panic!("expected second line to form pair");
-        }
-        let mut lexer2 = LexerBuilder{
-            s: line2,
-            peeked: Token::EOF,
-            r_builder: |s: &String| s,
-        }.build();
-        let l2 = Elem::new(&mut lexer2);
-
-        let res = Elem::cmp_print(&l1, &l2, 0);
-        //println!("{} {:?}", index, res);
-        match res {
-            Ordering::Equal => panic!(""),
-            Ordering::Less => {
-                sum += index;
-            },
-            Ordering::Greater => {},
-        }
-
-        index += 1;
+        let l = Elem::new(&mut lexer);
+        lists.push(l);
     }
-    println!("{sum}");
+
+    let marker1 = Elem::List(Vec::from([
+        Elem::List(Vec::from([
+            Elem::Int(2)
+        ]))
+    ]));
+    let marker2 = Elem::List(Vec::from([
+        Elem::List(Vec::from([
+            Elem::Int(6)
+        ]))
+    ]));
+
+    lists.push(marker1);
+    lists.push(marker2);
+
+    lists.sort();
+    for l in &lists {
+        println!("{}", l);
+    }
+
+    let marker1 = Elem::List(Vec::from([
+        Elem::List(Vec::from([
+            Elem::Int(2)
+        ]))
+    ]));
+    let marker2 = Elem::List(Vec::from([
+        Elem::List(Vec::from([
+            Elem::Int(6)
+        ]))
+    ]));
+
+    let idx1 = lists.binary_search(&marker1).expect("should find first marker");
+    let idx2 = lists.binary_search(&marker2).expect("should find second marker");
+    let r = (idx1+1) * (idx2+1);
+    print!{"{r}"};
 }
