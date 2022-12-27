@@ -1,4 +1,5 @@
 use std::cmp;
+use std::cmp::Ordering;
 use std::io;
 use std::str::FromStr;
 
@@ -50,6 +51,87 @@ struct Sensor {
     xdist: isize,
 }
 
+struct EdgeIterator {
+    sensor: Point,
+    dist: isize,
+    next: Point,
+    done: bool,
+}
+
+impl Iterator for EdgeIterator {
+    type Item = Point;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.done {
+            return None;
+        }
+        if self.next.x == self.sensor.x {
+            if self.next.y > self.sensor.y {
+                // top
+                println!("top");
+                self.next.x -= 1;
+                self.next.y -= 1;
+            } else {
+                // bottom
+                println!("bottom");
+                self.next.x += 1;
+                self.next.y += 1;
+            }
+        } else if self.next.y == self.sensor.y {
+            if self.next.x > self.sensor.x {
+                // right
+                println!("right");
+                self.next.x -= 1;
+                self.next.y += 1;
+            } else {
+                // left
+                println!("left");
+                self.next.x += 1;
+                self.next.y -= 1;
+            }
+        } else if self.next.x > self.sensor.x {
+            if self.next.y > self.sensor.y {
+                self.next.x -= 1;
+            } else if self.next.y < self.sensor.y {
+                self.next.x += 1;
+            }
+            self.next.y += 1;
+        } else if self.next.x < self.sensor.x {
+            if self.next.y > self.sensor.y {
+                self.next.x -= 1;
+            } else if self.next.y < self.sensor.y {
+                self.next.x += 1;
+            }
+            self.next.y -= 1;
+        } else {
+            panic!("unexpected coords");
+        }
+        let ret = self.next;
+        let start = Point {
+            x: self.sensor.x + self.dist + 1,
+            y: self.sensor.y,
+        };
+        if self.next == start {
+            self.done = true;
+        }
+        return Some(ret);
+    }
+}
+
+impl Sensor {
+    fn points_on_edge(&self) -> EdgeIterator {
+        return EdgeIterator {
+            sensor: self.pos,
+            dist: self.dist,
+            next: Point {
+                x: self.pos.x + self.dist + 1,
+                y: self.pos.y,
+            },
+            done: false,
+        };
+    }
+}
+
 impl FromStr for Sensor {
     type Err = ();
 
@@ -82,7 +164,7 @@ impl FromStr for Sensor {
     }
 }
 
-fn main() {
+fn main() -> Result<(), String> {
     let mut sensors = Vec::new();
     loop {
         let mut line = String::new();
@@ -99,35 +181,22 @@ fn main() {
         sensors.push(sensor);
     }
 
-    let max = sensors
-        .iter()
-        .max_by_key(|s| s.pos.x + s.xdist)
-        .expect("could not find max x");
-    let min = sensors
-        .iter()
-        .min_by_key(|s| s.pos.x - s.xdist)
-        .expect("could not find min x");
-    let x_max = max.pos.x + max.xdist;
-    let x_min = min.pos.x - max.xdist;
-
-    const y: isize = 2_000_000;
-    //const y: isize = 10;
-    let mut total = 0;
-
-    'outer: for x in x_min..=x_max {
-        let p = Point { x, y };
-        // don't count any beacons that are exactly on that line
-        for s in &sensors {
-            if p == s.beacon {
-                continue 'outer;
+    for s in &sensors {
+        // Since we know there's exactly one valid position, we know it has to be
+        // directly next to the edge of one of the sensor's range. So we only need
+        // to iterate through these and check if any other sensor is in range.
+        'p: for (i, p) in s.points_on_edge().enumerate() {
+            if p.x < 0 || p.x > 4_000_000 || p.y < 0 || p.y > 4_000_000 {
+                continue;
             }
-        }
-        for s in &sensors {
-            if s.pos.dist(&p) <= s.dist {
-                total += 1;
-                break;
+            for other_s in &sensors {
+                if other_s.pos.dist(&p) <= other_s.dist {
+                    continue 'p;
+                }
             }
+            println!("{}", p.x * 4_000_000 + p.y);
+            return Ok(());
         }
     }
-    println!("{total}");
+    Err(String::from("not found"))
 }
