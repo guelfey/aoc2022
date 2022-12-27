@@ -1,4 +1,5 @@
 use std::cell::RefCell;
+use std::cmp;
 use std::io;
 use std::rc::Rc;
 use std::str::FromStr;
@@ -18,7 +19,6 @@ impl Directory {
             }
         }
         dbg!(&self.name);
-        dbg!(self.entries.len());
         dbg!(total);
         total
     }
@@ -29,8 +29,6 @@ impl Directory {
             if let ListEntry::Dir(d) = e {
                 let db = d.borrow();
                 let size = db.total_size();
-                dbg!(&db.name);
-                dbg!(size);
                 if size < lim {
                     total += size;
                 }
@@ -38,6 +36,29 @@ impl Directory {
             }
         }
         total
+    }
+
+    fn smallest_larger(&self, lim: usize) -> Option<usize> {
+        let mut min = None;
+        for e in &self.entries {
+            if let ListEntry::Dir(d) = e {
+                let db = d.borrow();
+                if let Some(s) = db.smallest_larger(lim) {
+                    match min {
+                        None => min = Some(s),
+                        Some(m) => min = Some(cmp::min(m, s)),
+                    }
+                }
+                let s = db.total_size();
+                if s > lim {
+                    match min {
+                        None => min = Some(s),
+                        Some(m) => min = Some(cmp::min(m, s)),
+                    }
+                }
+            }
+        }
+        min
     }
 }
 
@@ -108,6 +129,9 @@ fn main() {
             pwd.borrow_mut().entries.push(e);
         }
     }
-    let total = root.borrow().total_size_filt(100000);
-    println!("{total}");
+    let total = root.borrow().total_size();
+    let unused = 70000000 - total;
+    let to_be_freed = 30000000 - unused;
+    let smallest = root.borrow().smallest_larger(to_be_freed).unwrap();
+    println!("{smallest}");
 }
