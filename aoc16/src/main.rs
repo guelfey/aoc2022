@@ -95,7 +95,7 @@ impl Graph {
     }
 }
 
-const MAX_TIME: usize = 30;
+const MAX_TIME: usize = 26;
 
 fn dists_from(pos: usize, neighbours: &[Vec<usize>]) -> Vec<usize> {
     let mut queue = VecDeque::new();
@@ -209,7 +209,15 @@ fn max_flow(g: &Graph) -> usize {
     let mut used = vec![false; real_valves.len()];
     let mut max_set = vec![0; 1 << real_valves.len()];
     max_flow_step(g, &real_valves, &mut used, state1, &mut max_set, &all_dists);
-    *max_set.iter().max().unwrap()
+    let mut max = 0;
+    for (u1, m1) in max_set.iter().enumerate() {
+        let u2 = ((1 << real_valves.len()) - 1) ^ u1;
+        let m2 = max_set[u2];
+        if m1 + m2 > max {
+            max = m1 + m2;
+        }
+    }
+    max
 }
 
 fn main() {
