@@ -95,7 +95,7 @@ impl Graph {
     }
 }
 
-const MAX_TIME: usize = 26;
+const MAX_TIME: usize = 30;
 
 fn dists_from(pos: usize, neighbours: &[Vec<usize>]) -> Vec<usize> {
     let mut queue = VecDeque::new();
@@ -147,60 +147,14 @@ fn try_next(old: State, next: usize, dists: &[Vec<usize>], flows: &[usize]) -> S
     }
 }
 
-fn max_flow_step_parallel(
-    g: &Graph,
-    valves: &[usize],
-    used: &mut [bool],
-    state1: State,
-    state2: State,
-    dists: &[Vec<usize>],
-) -> usize {
-    let mut max = 0;
-
-    // only consider branches where we're not at the end yet
-    if state1.time.is_none() && state2.time.is_none() {
-        return state1.value + state2.value;
-    }
-
-    for (i, v) in valves.iter().enumerate() {
+fn used_index(used: &[bool]) -> usize {
+    let mut u = 0;
+    for i in 0..used.len() {
         if used[i] {
-            continue;
+            u |= 1 << i;
         }
-
-        used[i] = true;
-        if state1.time.is_some() {
-            let mut new_states = [state1, state2];
-            new_states[0] = try_next(new_states[0], *v, dists, &g.flows);
-
-            let total_value = new_states[0].value + new_states[1].value;
-            if total_value > max {
-                max = total_value;
-            }
-
-            let value =
-                max_flow_step_parallel(g, &valves, used, new_states[0], new_states[1], dists);
-            if value > max {
-                max = value;
-            }
-        }
-        if state2.time.is_some() {
-            let mut new_states = [state1, state2];
-            new_states[1] = try_next(new_states[1], *v, dists, &g.flows);
-
-            let total_value = new_states[0].value + new_states[1].value;
-            if total_value > max {
-                max = total_value;
-            }
-
-            let value =
-                max_flow_step_parallel(g, &valves, used, new_states[0], new_states[1], dists);
-            if value > max {
-                max = value;
-            }
-        }
-        used[i] = false;
     }
-    max
+    u
 }
 
 fn max_flow_step(
@@ -208,13 +162,11 @@ fn max_flow_step(
     valves: &[usize],
     used: &mut [bool],
     state: State,
+    max_set: &mut [usize],
     dists: &[Vec<usize>],
-) -> (usize, usize) {
-    let mut max = 0;
-    let mut viable = 0;
-
+) {
     if state.time.is_none() {
-        return (state.value, 0);
+        return;
     }
 
     for (i, v) in valves.iter().enumerate() {
@@ -224,19 +176,15 @@ fn max_flow_step(
 
         used[i] = true;
         let new_state = try_next(state, *v, dists, &g.flows);
-        if new_state.value > max {
-            max = new_state.value;
+        let index = used_index(&used);
+        if new_state.value > max_set[index] {
+            max_set[index] = new_state.value;
         }
-        viable += 1;
-        let (value, add_viable) = max_flow_step(g, &valves, used, new_state, dists);
-        if value > max {
-            max = value;
-        }
-        viable += add_viable;
+
+        max_flow_step(g, &valves, used, new_state, max_set, dists);
 
         used[i] = false;
     }
-    (max, viable)
 }
 
 fn max_flow(g: &Graph) -> usize {
@@ -258,12 +206,10 @@ fn max_flow(g: &Graph) -> usize {
         pos: g.start,
         value: 0,
     };
-    let state2 = state1;
     let mut used = vec![false; real_valves.len()];
-    //max_flow_step_parallel(g, &real_valves, &mut used, state1, state2, &all_dists)
-    let (max, viable) = max_flow_step(g, &real_valves, &mut used, state1, &all_dists);
-    println!("viable: {viable}");
-    max
+    let mut max_set = vec![0; 1 << real_valves.len()];
+    max_flow_step(g, &real_valves, &mut used, state1, &mut max_set, &all_dists);
+    *max_set.iter().max().unwrap()
 }
 
 fn main() {
